@@ -1,0 +1,31 @@
+---
+title: "FML ASSIGNMENT"
+output: html_document
+date: "2023-09-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+demotest<-read.csv("penguins_lter.excel.csv")
+print(head(demotest))
+```
+
+```{r}
+demotest$Body.Mass..g.
+```
+```{r}
+table(demotest$Island)
+```
+```{r}
+sqrt(demotest$Sample.Number)
+```
+```{r}
+hist(demotest$Flipper.Length..mm., xlab = "X-axis", ylab = "Y_axis", main = "Histogram of Quantitative Variable", col = "yellow")
+```
+```{r}
+plot(demotest$Culmen.Length..mm., demotest$Culmen.Depth..mm., xlab = "X-axis", ylab = "Y-axis", main = "Scatter Plot", pch = 19, col="blue")
+```
+
