@@ -1,0 +1,201 @@
+---
+title: "FML ASSIGNMENT 4"
+author: "Sushma Palancha"
+date: "2023-11-12"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reading the required libraries
+```{r}
+library(flexclust)
+library(cluster) #Generic Utility Functions
+library(tidyverse) #Data manipulation
+library(factoextra) #Used for clustering algorithms and visualization
+library(FactoMineR)
+library(ggcorrplot) #Visualizing a correlation matrix using ggplot2
+```
+
+## Question A:#Use only the numerical variables (1 to 9) to cluster the 21 firms.Justify the various choices made in conducting the cluster analysis, such as weights for different variables,the specific clustering algorithm(s)used,the number of clusters formed, and so on.
+```{r}
+getwd()
+pharma<- read.csv("Pharmaceuticals.csv") #Reading the Dataset
+pharma1 <- pharma[ ,3:11] #Considering only numercial values i.e., 3-11 columns from csv file
+head(pharma1)
+```
+```{r}
+summary(pharma1)
+```
+
+## Normalizing the data frame with scale method:
+```{r}
+pharma2 <- scale(pharma1)
+row.names(pharma2) <- pharma[,1]
+distance <- get_dist(pharma2)
+corr <- cor(pharma2)
+```
+
+## Elbow Method to determine the number of clusters to do the cluster analysis:
+```{r}
+fviz_nbclust(pharma2, kmeans, method = "wss")
+```
+
+
+
+## By seeing the above graph from Elbow method, Graph is not clear to choose k=2 or 3 or 4 or 5.
+
+
+## Silhouette method for determining no of clusters:
+```{r}
+fviz_nbclust(pharma2, kmeans, method = "silhouette")
+```
+
+
+## By seeing the graph from silhouette method, I can see sharp rise at k=5.So, considering the  silhouette method.
+
+## Selecting K-Means
+```{r}
+set.seed(69)
+k5 <- kmeans(pharma2, centers = 5, nstart = 25) # k = 5, number of restarts = 25
+#Visualizing the output
+#Centroids
+k5$centers
+```
+
+## Visualizing Clustering Results
+```{r}
+fviz_cluster(k5, data = pharma2)
+```
+```{r}
+k5
+```
+
+## Distance Matrix Computation and Visualization
+```{r}
+distance<- dist(pharma2, method = "euclidean")
+fviz_dist(distance)
+corr<-cor(pharma2)
+ggcorrplot(corr,outline.color = "red",lab = TRUE,hc.order = TRUE,type = "full")
+```
+
+
+## I can see there are 5 clusters and the center is defined after 25 restarts which is determined in kmeans.
+
+```{r}
+#K-Means Cluster Analysis- Fit the data with 5 clusters
+fit<-kmeans(pharma2,5)
+
+#Finding the mean value of all quantitative variables for each cluster
+aggregate(pharma2,by=list(fit$cluster),FUN=mean)
+```
+```{r}
+pharma3<-data.frame(pharma2,fit$cluster)
+pharma3
+```
+```{r}
+view(pharma3)
+```
+
+```{r}
+clusplot(pharma2,k5$cluster, main="Clusters" ,shade=TRUE ,color = TRUE, labels = 3,lines = 0)
+```
+
+## Manhattan Method
+```{r}
+set.seed(69)
+k51 = kcca(pharma2, k=5, kccaFamily("kmedians"))
+k51
+clusters_index <- predict(k51)
+dist(k51@centers)
+```
+```{r}
+image(k51)
+points(pharma2, col=clusters_index,  pch=17, cex=0.5)
+```
+
+
+## QuestionB:#Interpret the clusters with respect to the numerical variables 
+#used in forming the clusters.
+```{r}
+pharma1 %>% mutate(Cluster = k5$cluster) %>% group_by(Cluster) %>% summarise_all("mean")
+```
+
+
+# Cluster 1:High mean values in certain variables suggest a specific profile for Cluster 1.
+
+# Cluster 2:Unique characteristics are indicated by mean values in Cluster 2.
+
+# Cluster 3:Patterns in mean values differentiate Cluster 3 from others.
+
+# Cluster 4:Distinct attributes are reflected in the mean values of Cluster 4.
+
+# Cluster 5:Specific patterns in mean values define the characteristics of Cluster 5.
+
+
+
+## Is there a pattern in the clusters with respect to the numerical variables 
+#(10 to 12)? (those not used in forming the clusters)
+```{r}
+pharma3 <- pharma[10:12] %>% mutate(Clusters=k5$cluster) 
+ggplot(pharma3, mapping = aes(factor(Clusters), fill =Median_Recommendation))+geom_bar(position='dodge')+labs(x ='Clusters')
+ggplot(pharma3, aes(x = factor(Clusters), fill =pharma$Location)) +
+  geom_bar(position = 'dodge') +
+  labs(x = 'Clusters') +
+  ggtitle('Distribution of Location across Clusters')
+ggplot(pharma3, mapping = aes(factor(Clusters),fill=pharma$Exchange))+geom_bar(position = 'dodge')+labs(x ='Clusters')
+```
+
+
+# Cluster 1: It  has the highest PE_Ratio and needs to be held as per the media recommendations.
+
+# Cluster 2: It has the highest market_Cap and has Good Leverage value. And they can be moderately recommended.
+
+# Cluster 3: It has lowest asset_turnover,and lowest beta. But media recommendations are highly positive.
+
+# Cluster 4: The leverage ratio is high, they are moderately recommended. 
+
+# Cluster 5: They have lowest revenue growth, highest assest turnover and highest net profit margin.
+# They are  recommended to be held for longer time.
+
+
+
+
+
+## Question C:#Using any or all of the variables in the dataset, give each cluster a suitable name.
+
+# Cluster 1: Balanced Performers: The name of this cluster implies that the companies within it have respectable and consistent financial indicators. It suggests a well-rounded performance in all areas of finances.
+
+# Cluster 2-Steady Growing Contenders: As suggested by their name, these businesses exhibit steady development, which makes them a moderately risk-free but dependable choice for holding or investing. It exhibits both stability and room for expansion.
+
+# Cluster 3: Dynamic Opportunity Firms: As suggested by the name, companies in this cluster may offer a variety of investment options, which are marked by higher risk (sell) as well as possible growth (buy). It alludes to performance dynamism and variety.
+
+# Cluster 4-Stable Investment Picks: This moniker highlights companies that exhibit strong financial performance and stability, which makes them desirable for long-term investment and purchase.
+
+# Cluster 5: Long-term Value Holders: As implied by the name, companies in this cluster are good investments since they have the ability to generate long-term value. They are probably distinguished by high asset turnover and moderate but steady revenue growth.
+
+
+## SUMMARY:
+
+# Using K-Means clustering and concentrating just on their number qualities (1 to 9), we conducted an analytical tour over 21 pharmaceutical enterprises. The methodology comprised the intentional use of the Elbow and Silhouette techniques in conjunction with a careful normalizing process. As a result, five different clusters were found, each of which represented a distinct financial profile.
+
+# Analyzing these clusters in relation to numerical factors revealed some interesting trends. While Cluster 2 displayed unique traits, Cluster 1 stood out with high mean values, suggesting a particular financial profile. Cluster 3 was distinguished by its own patterns, Cluster 4 by its own features, and Cluster 5 by its own patterns that defined its own properties.
+
+# Numerical variables (10–12) were examined in further detail, revealing cluster-specific details. As per media suggestions, Cluster 1 demonstrated the greatest PE_Ratio. Cluster 2 received modest recommendations due to its positive leverage value and biggest market cap. On the other hand, Cluster 3, which had the lowest beta and asset turnover, gave media recommendations that were surprisingly positive. While Cluster 5, which has the largest net profit margin and asset turnover but the lowest revenue growth, recommended a longer investment horizon, Cluster 4, which is characterized by a high leverage ratio, received moderate recommendations.
+
+# We assigned each cluster the following fitting terms in order to capture their fundamentals: "Balanced Performers," "Steady Growing Contenders," "Dynamic Opportunity Firms," "Stable Investment Picks," and "Long-term Value Holders." Decision-makers can use these names to gain strategic insights and navigate the ever-changing pharmaceutical investment market by quickly capturing the financial narratives inside each cluster.
+
+# It may be concluded that this analysis offers a thorough picture of the financial variability that exists among pharmaceutical companies. By grouping and labeling these clusters, investors and other industry stakeholders gain insightful viewpoints in the always changing field of pharmaceutical investments. This serves as a useful compass for strategic decision-making.
+
+
+
+
+
+
+
+
